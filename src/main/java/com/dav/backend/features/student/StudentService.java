@@ -40,6 +40,67 @@ public class StudentService {
         return students;
     }
 
+    // Get Students on pagination based response
+    public PaginatedResponse<Student> getStudentsPaginated(String className, String section, int size, String pageToken, int page) throws Exception {
+        Firestore db = FirestoreClient.getFirestore();
+        CollectionReference colRef = db.collection(COLLECTION_NAME);
+
+        Query query = colRef;
+
+        if (className != null && !className.isEmpty()) {
+            query = query.whereEqualTo("className", className);
+        }
+        if (section != null && !section.isEmpty()) {
+            query = query.whereEqualTo("section", section);
+        }
+
+        query = query.orderBy("admissionNo").limit(size);
+
+        if (pageToken != null && !pageToken.isEmpty()) {
+            DocumentSnapshot lastDoc = colRef.document(pageToken).get().get();
+            if (lastDoc.exists()) {
+                query = query.startAfter(lastDoc);
+            }
+        }
+
+        ApiFuture<QuerySnapshot> future = query.get();
+        List<QueryDocumentSnapshot> documents = future.get().getDocuments();
+
+        List<Student> students = new ArrayList<>();
+        for (QueryDocumentSnapshot doc : documents) {
+            Student student = doc.toObject(Student.class);
+            student.setId(doc.getId());
+            students.add(student);
+        }
+
+        // Calculate totalCount via a count query with same filters
+        ApiFuture<QuerySnapshot> countFuture;
+        if ((className != null && !className.isEmpty()) && (section != null && !section.isEmpty())) {
+            countFuture = colRef.whereEqualTo("className", className)
+                    .whereEqualTo("section", section)
+                    .get();
+        } else if (className != null && !className.isEmpty()) {
+            countFuture = colRef.whereEqualTo("className", className).get();
+        } else if (section != null && !section.isEmpty()) {
+            countFuture = colRef.whereEqualTo("section", section).get();
+        } else {
+            countFuture = colRef.get();
+        }
+
+        int totalCount = countFuture.get().size();
+        int totalPages = (int) Math.ceil((double) totalCount / size);
+
+        String nextPageToken = null;
+        if (documents.size() == size) {
+            nextPageToken = documents.get(documents.size() - 1).getId();
+        }
+
+        return new PaginatedResponse<>(students, nextPageToken, page, totalPages);
+    }
+
+
+
+
     // Update student by admissionNo
     public Student updateStudentByAdmissionNo(String admissionNo, Student updatedStudent) throws Exception {
         Firestore db = FirestoreClient.getFirestore();
