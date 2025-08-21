@@ -21,11 +21,20 @@ public class StudentService {
             throw new RuntimeException("Admission number already exists");
         }
 
-        DocumentReference docRef = db.collection(COLLECTION_NAME).document();
-        student.setId(docRef.getId());
+        DocumentReference docRef = db.collection(COLLECTION_NAME).document(student.getAdmissionNo());
+        student.setId(student.getAdmissionNo());
         docRef.set(student).get();
         return student;
     }
+
+    public Student getStudentByAdmissionNumber(String admissionNum) throws ExecutionException, InterruptedException {
+        DocumentSnapshot docSnapshot = getStudentByAdmissionNo(admissionNum);
+        if (docSnapshot == null || !docSnapshot.exists()) {
+            throw new RuntimeException("Student not found with admissionNo: " + admissionNum);
+        }
+        return docSnapshot.toObject(Student.class);
+    }
+
 
     public List<Student> getAllStudents() throws Exception {
         Firestore db = FirestoreClient.getFirestore();

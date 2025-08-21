@@ -1,10 +1,13 @@
 package com.dav.backend.features.student;
 
 import com.dav.backend.utils.FailureResponse;
+import com.dav.backend.utils.ResultsUtil;
 import com.dav.backend.utils.StudentExcelImporter;
 import com.dav.backend.utils.SuccessResponse;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -66,8 +69,8 @@ public class StudentController {
         }
     }
 
-    @GetMapping
-    public ResponseEntity<?> getAllStudents(
+    @GetMapping("/paginated")
+    public ResponseEntity<?> getAllStudentsPaginated(
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(required = false) String className,
@@ -83,8 +86,16 @@ public class StudentController {
         }
     }
 
-
-
+    @GetMapping
+    public ResponseEntity<?> getAllStudents() {
+        try {
+            List<Student> response = studentService.getAllStudents();
+            return ResponseEntity.ok(new SuccessResponse<>(response, "Students fetched successfully!"));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new FailureResponse("Failed to fetch students: " + e.getMessage()));
+        }
+    }
 
 
     // Bulk Import for students
