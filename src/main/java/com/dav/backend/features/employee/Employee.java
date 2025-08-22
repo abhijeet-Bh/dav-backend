@@ -2,23 +2,21 @@ package com.dav.backend.features.employee;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.google.cloud.firestore.annotation.DocumentId;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.Date;
+import java.util.List;
 
-@Data
-@Builder
+@Getter
+@Setter
 @NoArgsConstructor
-@AllArgsConstructor
-public class Employee {
-
+public class Employee implements UserDetails {
     @DocumentId
-    private String id; // Firestore document ID
-
-    private String employeeId; // Unique Employee ID
+    private String id;
+    private String employeeId;
     private String name;
     private String mobileNo;
     private String designation;
@@ -26,6 +24,45 @@ public class Employee {
     private String email;
     private String address;
 
+    // Auth fields
+    private String password;
+    private String role = "ROLE_EMPLOYEE";
+    private boolean accountNonExpired = true;
+    private boolean accountNonLocked = true;
+    private boolean credentialsNonExpired = true;
+    private boolean enabled = true;
+
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
-    private Date joiningDate;
+    private Date joiningDate = new Date();
+
+
+    @com.google.cloud.firestore.annotation.Exclude
+    @com.fasterxml.jackson.annotation.JsonIgnore
+    @Override
+    public List<GrantedAuthority> getAuthorities() {
+        return List.of(new SimpleGrantedAuthority(role));
+    }
+
+    @com.google.cloud.firestore.annotation.Exclude
+    @com.fasterxml.jackson.annotation.JsonIgnore
+    @Override
+    public String getUsername() {
+        return this.employeeId;
+    }
+
+    @com.google.cloud.firestore.annotation.Exclude
+    @com.fasterxml.jackson.annotation.JsonIgnore
+    @Override public boolean isAccountNonExpired() { return accountNonExpired; }
+
+    @com.google.cloud.firestore.annotation.Exclude
+    @com.fasterxml.jackson.annotation.JsonIgnore
+    @Override public boolean isAccountNonLocked() { return accountNonLocked; }
+
+    @com.google.cloud.firestore.annotation.Exclude
+    @com.fasterxml.jackson.annotation.JsonIgnore
+    @Override public boolean isCredentialsNonExpired() { return credentialsNonExpired; }
+
+    @com.google.cloud.firestore.annotation.Exclude
+    @com.fasterxml.jackson.annotation.JsonIgnore
+    @Override public boolean isEnabled() { return enabled; }
 }

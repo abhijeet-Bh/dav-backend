@@ -1,14 +1,17 @@
 package com.dav.backend.features.student;
 
+import com.dav.backend.features.auth.JwtResponse;
+import com.dav.backend.features.auth.JwtUtil;
+import com.dav.backend.features.auth.LoginRequest;
 import com.dav.backend.utils.FailureResponse;
-import com.dav.backend.utils.ResultsUtil;
 import com.dav.backend.utils.StudentExcelImporter;
 import com.dav.backend.utils.SuccessResponse;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -23,8 +26,27 @@ public class StudentController {
 
     @Autowired
     private StudentService studentService;
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+    @Autowired
+    private JwtUtil jwtUtil;
+
+    @PostMapping("/login")
+    public ResponseEntity<?> login(@RequestBody LoginRequest request) {
+        Student student = studentService.findByAdmissionNo(request.getAdmissionNo());
+        if(student == null)
+            throw new RuntimeException("Admission Number cannot be empty!");
+
+        if (!passwordEncoder.matches(request.getPassword(), student.getPassword())) {
+            throw new BadCredentialsException("Invalid Password!");
+        }
+
+        String token = jwtUtil.generateToken(student.getAdmissionNo(), student.getRole());
+        return ResponseEntity.ok(new JwtResponse(token, student.getRole()));
+    }
 
     @PostMapping
+    @PreAuthorize("hasAnyRole('EMPLOYEE', 'ADMIN')")
     public ResponseEntity<?> addStudent(@RequestBody Student student) {
         try {
             Student savedStudent = studentService.addStudent(student);
@@ -40,6 +62,7 @@ public class StudentController {
     }
 
     @PutMapping("/{admissionNo}")
+    @PreAuthorize("hasAnyRole('EMPLOYEE', 'ADMIN')")
     public ResponseEntity<?> updateStudent(@PathVariable String admissionNo, @RequestBody Student student) {
         try {
             Student savedStudent = studentService.updateStudentByAdmissionNo(admissionNo, student);
@@ -55,6 +78,7 @@ public class StudentController {
     }
 
     @DeleteMapping("/{admissionNo}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> deleteStudent(@PathVariable String admissionNo) {
         try {
             studentService.deleteStudentByAdmissionNo(admissionNo);
@@ -87,6 +111,7 @@ public class StudentController {
     }
 
     @GetMapping
+    @PreAuthorize("hasAnyRole('STUDENT', 'EMPLOYEE')")
     public ResponseEntity<?> getAllStudents() {
         try {
             List<Student> response = studentService.getAllStudents();
@@ -100,6 +125,7 @@ public class StudentController {
 
     // Bulk Import for students
     @PostMapping("/import")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> importStudents(@RequestParam("file") MultipartFile file) {
         List<Integer> errorRows = new ArrayList<>();
         List<Student> addedStudents = new ArrayList<>();

@@ -1,0 +1,12 @@
+package com.dav.backend.features.auth;
+
+import lombok.AllArgsConstructor;
+import lombok.Data;
+
+@Data
+@AllArgsConstructor
+public class JwtResponse {
+    private String token;
+    private String role;
+}
+

@@ -3,6 +3,8 @@ package com.dav.backend.features.student;
 import com.google.api.core.ApiFuture;
 import com.google.cloud.firestore.*;
 import com.google.firebase.cloud.FirestoreClient;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -14,6 +16,27 @@ public class StudentService {
 
     private static final String COLLECTION_NAME = "students";
 
+    @Autowired
+    PasswordEncoder passwordEncoder;
+
+    public Student findByAdmissionNo(String admissionNo) {
+        try {
+            Firestore db = FirestoreClient.getFirestore();
+            ApiFuture<QuerySnapshot> future = db.collection(COLLECTION_NAME)
+                    .whereEqualTo("admissionNo", admissionNo)
+                    .limit(1)
+                    .get();
+            QuerySnapshot querySnapshot = future.get();
+            if (!querySnapshot.isEmpty()) {
+                DocumentSnapshot doc = querySnapshot.getDocuments().get(0);
+                return doc.toObject(Student.class);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
     public Student addStudent(Student student) throws Exception {
         Firestore db = FirestoreClient.getFirestore();
 
@@ -21,11 +44,16 @@ public class StudentService {
             throw new RuntimeException("Admission number already exists");
         }
 
-        DocumentReference docRef = db.collection(COLLECTION_NAME).document(student.getAdmissionNo());
+        // Encode password before saving
+        student.setPassword(passwordEncoder.encode(student.getPassword()));
+
+        DocumentReference docRef = db.collection("students").document(student.getAdmissionNo());
         student.setId(student.getAdmissionNo());
         docRef.set(student).get();
+
         return student;
     }
+
 
     public Student getStudentByAdmissionNumber(String admissionNum) throws ExecutionException, InterruptedException {
         DocumentSnapshot docSnapshot = getStudentByAdmissionNo(admissionNum);

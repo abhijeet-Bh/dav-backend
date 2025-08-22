@@ -1,7 +1,10 @@
 package com.dav.backend.features.employee;
 
-import com.google.cloud.firestore.DocumentReference;
-import com.google.cloud.firestore.QueryDocumentSnapshot;
+import com.google.api.core.ApiFuture;
+import com.google.cloud.firestore.*;
+import com.google.firebase.cloud.FirestoreClient;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -14,21 +17,47 @@ public class EmployeeService {
     private final EmployeeRepository employeeRepository;
     private static final String COLLECTION_NAME = "employees";
 
+    @Autowired
+    PasswordEncoder passwordEncoder;
+
     public EmployeeService(EmployeeRepository employeeRepository) {
         this.employeeRepository = employeeRepository;
     }
 
+    public Employee findByEmployeeId(String employeeId) {
+        try {
+            Firestore db = FirestoreClient.getFirestore();
+            ApiFuture<QuerySnapshot> future = db.collection(COLLECTION_NAME)
+                    .whereEqualTo("employeeId", employeeId)
+                    .limit(1)
+                    .get();
+            QuerySnapshot querySnapshot = future.get();
+            if (!querySnapshot.isEmpty()) {
+                DocumentSnapshot doc = querySnapshot.getDocuments().get(0);
+                return doc.toObject(Employee.class);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
     // CREATE
     public Employee addEmployee(Employee employee) throws Exception {
-        // Check if employeeId already exists
         if (employeeRepository.getDocumentByEmployeeId(employee.getEmployeeId()) != null) {
             throw new Exception("Employee ID already exists!");
         }
-        DocumentReference docRef = employeeRepository.getCollection().document();
-        employee.setId(docRef.getId());
+        // Encode password before saving
+        employee.setPassword(passwordEncoder.encode(employee.getPassword()));
+
+        Firestore db = FirestoreClient.getFirestore();
+        DocumentReference docRef = db.collection("employees").document(employee.getEmployeeId());
+        employee.setId(employee.getEmployeeId());
         docRef.set(employee).get();
+
         return employee;
     }
+
 
     // READ ALL
     public List<Employee> getAllEmployees() throws ExecutionException, InterruptedException {
