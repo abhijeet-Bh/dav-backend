@@ -1,4 +1,4 @@
-name: Push Spring Boot App to dockerhub
+name: Push Spring Boot App to DockerHub
 
 on:
   push:
@@ -44,24 +44,15 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      # Pull current latest (to re-tag as versioned backup)
-      - name: Pull existing latest
+      # Build new Docker image and tag
+      - name: Build Docker image
         run: |
-          docker pull $IMAGE_NAME:latest || echo "No latest image found"
+          VERSION=${{ steps.get_version.outputs.version }}
+          docker build --platform linux/amd64 -t $IMAGE_NAME:latest -t $IMAGE_NAME:$VERSION .
 
-      - name: Tag previous latest with version
+      # Push both latest and versioned image
+      - name: Push Docker images
         run: |
-          if docker images $IMAGE_NAME:latest --format '{{.Repository}}'; then
-            docker tag $IMAGE_NAME:latest $IMAGE_NAME:${{ steps.get_version.outputs.version }}
-            docker push $IMAGE_NAME:${{ steps.get_version.outputs.version }}
-          else
-            echo "No previous latest to tag"
-          fi
-
-      # Build new image
-      - name: Build new Docker image
-        run: docker build --platform linux/amd64 -t $IMAGE_NAME:latest .
-
-      # Push new latest
-      - name: Push new latest
-        run: docker push $IMAGE_NAME:latest
+          VERSION=${{ steps.get_version.outputs.version }}
+          docker push $IMAGE_NAME:latest
+          docker push $IMAGE_NAME:$VERSION
