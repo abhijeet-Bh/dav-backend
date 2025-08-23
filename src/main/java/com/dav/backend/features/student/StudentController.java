@@ -34,7 +34,7 @@ public class StudentController {
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest request) {
         Student student = studentService.findByAdmissionNo(request.getAdmissionNo());
-        if(student == null)
+        if(request.getAdmissionNo() == null || request.getPassword().isEmpty())
             throw new RuntimeException("Admission Number cannot be empty!");
 
         if (!passwordEncoder.matches(request.getPassword(), student.getPassword())) {

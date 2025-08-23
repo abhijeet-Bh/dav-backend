@@ -21,7 +21,7 @@ public class ResultsUtil {
             throw new RuntimeException("This Result Template supports only 7 subjects");
         }
 
-        InputStream templateInput = getClass().getResourceAsStream("/templates/student-results-v3.pdf");  // Your fillable template
+        InputStream templateInput = getClass().getResourceAsStream("/templates/student-results-v4.pdf");  // Your fillable template
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         PdfDocument pdfDoc = new PdfDocument(new PdfReader(templateInput), new PdfWriter(baos));
@@ -30,16 +30,16 @@ public class ResultsUtil {
 
         // Fill basic metadata
         fields.get("session").setValue(studentResultsDTO.getSession());
-        fields.get("examType").setValue(studentResultsDTO.getExamType());
-        fields.get("studentName").setValue(studentResultsDTO.getStudent().getStudentName());
+        fields.get("resultType").setValue(studentResultsDTO.getExamType());
+        fields.get("name").setValue(studentResultsDTO.getStudent().getStudentName());
         fields.get("admissionNo").setValue(studentResultsDTO.getStudent().getAdmissionNo());
         fields.get("classSection").setValue(studentResultsDTO.getStudent().getClassName() + " - " + studentResultsDTO.getStudent().getSection());
         fields.get("rollNo").setValue(studentResultsDTO.getRollNo());
         fields.get("fatherName").setValue(studentResultsDTO.getStudent().getFatherName());
         fields.get("motherName").setValue(studentResultsDTO.getStudent().getMotherName());
-        fields.get("phone").setValue(studentResultsDTO.getStudent().getMobileNo());
+        fields.get("phoneNumber").setValue(studentResultsDTO.getStudent().getMobileNo());
         fields.get("dateOfBirth").setValue(String.valueOf(studentResultsDTO.getStudent().getBirthDate()));
-        fields.get("Address").setValue(studentResultsDTO.getStudent().getAddress());
+        fields.get("address").setValue(studentResultsDTO.getStudent().getAddress());
 
         int i=1;
         double totalMarks = 0, totalMarksObtained = 0;
@@ -50,11 +50,12 @@ public class ResultsUtil {
             fields.get("th"+i).setValue(String.valueOf(sub.getTheoryMarks()));
             fields.get("pr"+i).setValue(String.valueOf(sub.getPracticalMarks()));
             fields.get("tot"+i).setValue(String.valueOf(sub.getTotalMarks()));
-            fields.get("grade"+i).setValue(String.valueOf(sub.getGrade()));
+            fields.get("gr"+i).setValue(String.valueOf(sub.getGrade()));
             totalMarksObtained += sub.getTotalMarks();
             totalMarks += sub.getMaxMarks();
             i++;
         }
+        fields.get("totalMarks").setValue(totalMarksObtained + "/" + totalMarks);
 
         double percentage = ((double) totalMarksObtained / totalMarks) * 100;
         fields.get("percentage").setValue(String.format("%.2f%%", percentage));
