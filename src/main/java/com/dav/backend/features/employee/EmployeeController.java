@@ -33,7 +33,7 @@ public class EmployeeController {
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest request) {
         Employee employee = employeeService.findByEmployeeId(request.getEmployeeId());
-        if(employee == null)
+        if(request.getEmployeeId() == null || request.getPassword().isEmpty())
             throw new RuntimeException("Employee Id cannot be empty!");
 
         if (!passwordEncoder.matches(request.getPassword(), employee.getPassword())) {
