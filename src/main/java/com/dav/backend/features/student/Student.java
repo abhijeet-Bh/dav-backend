@@ -2,6 +2,7 @@ package com.dav.backend.features.student;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.google.cloud.firestore.annotation.DocumentId;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -16,6 +17,7 @@ import java.util.List;
 @Getter
 @Setter
 @NoArgsConstructor
+@JsonIgnoreProperties(value = {"password"}, allowSetters = true)
 public class Student implements UserDetails {
     @DocumentId
     private String id;
@@ -26,6 +28,8 @@ public class Student implements UserDetails {
     private String section;
     private String fatherName;
     private String motherName;
+    private String gender;
+    private int rollNo;
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
     private Date birthDate;
     private String address;
@@ -33,10 +37,10 @@ public class Student implements UserDetails {
     // Auth fields
     private String password;
     private String role = "ROLE_STUDENT";
-    private boolean accountNonExpired = true;
-    private boolean accountNonLocked = true;
-    private boolean credentialsNonExpired = true;
-    private boolean enabled = true;
+    private boolean accountNonExpired;
+    private boolean accountNonLocked;
+    private boolean credentialsNonExpired;
+    private boolean enabled;
 
     @com.google.cloud.firestore.annotation.Exclude
     @com.fasterxml.jackson.annotation.JsonIgnore
@@ -52,19 +56,15 @@ public class Student implements UserDetails {
         return this.admissionNo;
     }
 
-    @com.google.cloud.firestore.annotation.Exclude
     @com.fasterxml.jackson.annotation.JsonIgnore
-    @Override public boolean isAccountNonExpired() { return accountNonExpired; }
+    @Override public boolean isAccountNonExpired() { return this.accountNonExpired; }
 
-    @com.google.cloud.firestore.annotation.Exclude
     @com.fasterxml.jackson.annotation.JsonIgnore
-    @Override public boolean isAccountNonLocked() { return accountNonLocked; }
+    @Override public boolean isAccountNonLocked() { return this.accountNonLocked; }
 
-    @com.google.cloud.firestore.annotation.Exclude
     @com.fasterxml.jackson.annotation.JsonIgnore
-    @Override public boolean isCredentialsNonExpired() { return credentialsNonExpired; }
+    @Override public boolean isCredentialsNonExpired() { return this.credentialsNonExpired; }
 
-    @com.google.cloud.firestore.annotation.Exclude
     @com.fasterxml.jackson.annotation.JsonIgnore
-    @Override public boolean isEnabled() { return enabled; }
+    @Override public boolean isEnabled() { return this.enabled; }
 }

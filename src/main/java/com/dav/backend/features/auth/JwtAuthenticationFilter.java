@@ -1,5 +1,10 @@
 package com.dav.backend.features.auth;
 
+import io.jsonwebtoken.ExpiredJwtException;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -9,10 +14,6 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.web.filter.OncePerRequestFilter;
 
-import jakarta.servlet.FilterChain;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -47,11 +48,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             try {
                 username = jwtUtil.getUsernameFromToken(jwt);
                 role = jwtUtil.getRoleFromToken(jwt);
+            } catch (ExpiredJwtException ex) {
+                logger.warn("Expired JWT token: " + ex.getMessage());
+                // Pass flag forward so AuthenticationEntryPoint can handle it
+                request.setAttribute("jwt_expired", ex.getMessage());
             } catch (Exception e) {
                 logger.warn("Invalid JWT token: " + e.getMessage());
+                request.setAttribute("jwt_invalid", e.getMessage());
             }
         }
-
 
         if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             UserDetails userDetails = null;

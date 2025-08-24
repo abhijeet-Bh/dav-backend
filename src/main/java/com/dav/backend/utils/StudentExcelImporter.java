@@ -28,9 +28,11 @@ public class StudentExcelImporter {
                     student.setSection(dataFormatter.formatCellValue(row.getCell(5)).trim());
                     student.setFatherName(dataFormatter.formatCellValue(row.getCell(6)).trim());
                     student.setMotherName(dataFormatter.formatCellValue(row.getCell(7)).trim());
+                    student.setGender(dataFormatter.formatCellValue(row.getCell(8)).trim());
+                    student.setRollNo(Integer.parseInt(dataFormatter.formatCellValue(row.getCell(9)).trim()));
 
                     // Date conversion: "DD-MM-YYYY" to "yyyy-MM-dd"
-                    String excelDate = dataFormatter.formatCellValue(row.getCell(8));
+                    String excelDate = dataFormatter.formatCellValue(row.getCell(10));
                     SimpleDateFormat inputFmt = new SimpleDateFormat("dd-MM-yyyy");
 
                     // Set timezone to UTC to avoid day-shift issues
@@ -39,7 +41,9 @@ public class StudentExcelImporter {
                     student.setBirthDate(birthDate);
 
 
-                    student.setAddress(dataFormatter.formatCellValue(row.getCell(9)).trim());
+                    student.setAddress(dataFormatter.formatCellValue(row.getCell(11)).trim());
+                    student.setPassword(dataFormatter.formatCellValue(row.getCell(3)).trim());
+
                     students.add(student);
                 } catch (Exception e) {
                     log.error(e.getMessage());

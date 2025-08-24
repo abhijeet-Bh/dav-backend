@@ -1,16 +1,21 @@
 package com.dav.backend.features.student;
 
-import com.dav.backend.features.auth.JwtResponse;
+import com.dav.backend.exceptions.CustomException;
+import com.dav.backend.exceptions.ErrorCode;
 import com.dav.backend.features.auth.JwtUtil;
 import com.dav.backend.features.auth.LoginRequest;
 import com.dav.backend.utils.FailureResponse;
 import com.dav.backend.utils.StudentExcelImporter;
 import com.dav.backend.utils.SuccessResponse;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -20,6 +25,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/v1/students")
 public class StudentController {
@@ -30,19 +36,36 @@ public class StudentController {
     private PasswordEncoder passwordEncoder;
     @Autowired
     private JwtUtil jwtUtil;
+    @Autowired
+    private AuthenticationManager authenticationManager;
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest request) {
-        Student student = studentService.findByAdmissionNo(request.getAdmissionNo());
-        if(request.getAdmissionNo() == null || request.getPassword().isEmpty())
-            throw new RuntimeException("Admission Number cannot be empty!");
-
-        if (!passwordEncoder.matches(request.getPassword(), student.getPassword())) {
-            throw new BadCredentialsException("Invalid Password!");
+        if (request.getAdmissionNo() == null || request.getAdmissionNo().isEmpty() ||
+                request.getPassword() == null || request.getPassword().isEmpty()) {
+            throw new RuntimeException("Admission No and password cannot be empty!");
         }
+        Student findStudent = studentService.findByAdmissionNo(request.getAdmissionNo());
+        if(findStudent == null)
+            throw new CustomException(ErrorCode.STUDENT_NOT_FOUND, "Student with is: " + request.getAdmissionNo() + " Not found!");
+        else if (!passwordEncoder.matches(request.getPassword(), findStudent.getPassword()))
+            throw new BadCredentialsException("Invalid Password!");
+
+        // Delegate authentication to AuthenticationManager
+        Authentication authentication = authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(request.getAdmissionNo(), request.getPassword())
+        );
+
+        Student student = (Student) authentication.getPrincipal();
 
         String token = jwtUtil.generateToken(student.getAdmissionNo(), student.getRole());
-        return ResponseEntity.ok(new JwtResponse(token, student.getRole()));
+
+        HashMap<String, Object> data = new HashMap<>();
+        data.put("accessToken", token);
+        data.put("profile", student);
+        data.put("role", student.getRole());
+
+        return ResponseEntity.ok(new SuccessResponse<>(data, "Logged In Successfully!"));
     }
 
     @PostMapping
@@ -111,7 +134,7 @@ public class StudentController {
     }
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('STUDENT', 'EMPLOYEE')")
+    @PreAuthorize("hasRole('EMPLOYEE')")
     public ResponseEntity<?> getAllStudents() {
         try {
             List<Student> response = studentService.getAllStudents();
@@ -132,8 +155,13 @@ public class StudentController {
         try {
             List<Student> students = StudentExcelImporter.importStudents(file.getInputStream(), errorRows);
             for (Student s : students) {
-                Student res = studentService.addStudent(s);
-            addedStudents.add(res);
+                try {
+                    Student res = studentService.addStudent(s);
+                    addedStudents.add(res);
+                }catch (Exception e){
+                    log.error(e.getMessage());
+                    errorRows.add(Integer.valueOf(s.getAdmissionNo()));
+                }
             }
             Map<String, Object> result = new HashMap<>();
             result.put("total", students.size());
@@ -150,6 +178,13 @@ public class StudentController {
 
             return ResponseEntity.ok(result);
         } catch (Exception e) {
+            // get error rows
+            if(!errorRows.isEmpty()) {
+                System.out.println("Rows with errors:");
+                for(Integer row : errorRows) {
+                    System.out.println("Row: " + row);
+                }
+            }
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed: " + e.getMessage());
         }
     }

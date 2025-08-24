@@ -1,6 +1,8 @@
 package com.dav.backend.features.employee;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.google.cloud.firestore.annotation.DocumentId;
 import lombok.*;
 import org.springframework.security.core.GrantedAuthority;
@@ -13,6 +15,7 @@ import java.util.List;
 @Getter
 @Setter
 @NoArgsConstructor
+@JsonIgnoreProperties(value = {"password"}, allowSetters = true)
 public class Employee implements UserDetails {
     @DocumentId
     private String id;
@@ -50,19 +53,15 @@ public class Employee implements UserDetails {
         return this.employeeId;
     }
 
-    @com.google.cloud.firestore.annotation.Exclude
     @com.fasterxml.jackson.annotation.JsonIgnore
     @Override public boolean isAccountNonExpired() { return accountNonExpired; }
 
-    @com.google.cloud.firestore.annotation.Exclude
     @com.fasterxml.jackson.annotation.JsonIgnore
     @Override public boolean isAccountNonLocked() { return accountNonLocked; }
 
-    @com.google.cloud.firestore.annotation.Exclude
     @com.fasterxml.jackson.annotation.JsonIgnore
     @Override public boolean isCredentialsNonExpired() { return credentialsNonExpired; }
 
-    @com.google.cloud.firestore.annotation.Exclude
     @com.fasterxml.jackson.annotation.JsonIgnore
     @Override public boolean isEnabled() { return enabled; }
 }

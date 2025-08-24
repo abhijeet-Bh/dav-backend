@@ -53,6 +53,13 @@ public class EmployeeService {
         Firestore db = FirestoreClient.getFirestore();
         DocumentReference docRef = db.collection("employees").document(employee.getEmployeeId());
         employee.setId(employee.getEmployeeId());
+
+        // Auth fields
+        employee.setAccountNonExpired(true);
+        employee.setAccountNonLocked(true);
+        employee.setCredentialsNonExpired(true);
+        employee.setEnabled(true);
+
         docRef.set(employee).get();
 
         return employee;
