@@ -2,7 +2,6 @@ package com.dav.backend.features.employee;
 
 import com.dav.backend.exceptions.CustomException;
 import com.dav.backend.exceptions.ErrorCode;
-import com.dav.backend.features.auth.JwtResponse;
 import com.dav.backend.features.auth.JwtUtil;
 import com.dav.backend.features.auth.LoginRequest;
 import com.dav.backend.utils.FailureResponse;
@@ -11,10 +10,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
 
 @RestController
@@ -31,21 +34,36 @@ public class EmployeeController {
     private PasswordEncoder passwordEncoder;
     @Autowired
     private JwtUtil jwtUtil;
+    @Autowired
+    private AuthenticationManager authenticationManager;
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest request) {
-        Employee employee = employeeService.findByEmployeeId(request.getEmployeeId());
-        if(request.getEmployeeId() == null || request.getPassword().isEmpty())
-            throw new RuntimeException("Employee Id cannot be empty!");
-        if(employee == null)
-            throw new CustomException(ErrorCode.EMPLOYEE_NOT_FOUND,"Employee with id: " + request.getEmployeeId() + " Not found :(");
-
-        if (!passwordEncoder.matches(request.getPassword(), employee.getPassword())) {
-            throw new BadCredentialsException("Invalid Password!");
+        if (request.getEmployeeId() == null || request.getEmployeeId().isEmpty() ||
+                request.getPassword() == null || request.getPassword().isEmpty()) {
+            throw new RuntimeException("Employee Id and password cannot be empty!");
         }
+        Employee findEmployee = employeeService.findByEmployeeId(request.getEmployeeId());
+        if(findEmployee == null)
+            throw new CustomException(ErrorCode.EMPLOYEE_NOT_FOUND, "Employee with is: " + request.getEmployeeId() + " Not found!");
+        else if (!passwordEncoder.matches(request.getPassword(), findEmployee.getPassword()))
+            throw new BadCredentialsException("Invalid Password!");
+
+        // Delegate authentication to AuthenticationManager
+        Authentication authentication = authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(request.getEmployeeId(), request.getPassword())
+        );
+
+        Employee employee = (Employee) authentication.getPrincipal();
 
         String token = jwtUtil.generateToken(employee.getEmployeeId(), employee.getRole());
-        return ResponseEntity.ok(new JwtResponse(token, employee.getRole()));
+
+        HashMap<String, Object> data = new HashMap<>();
+        data.put("accessToken", token);
+        data.put("profile", employee);
+        data.put("role", employee.getRole());
+
+        return ResponseEntity.ok(new SuccessResponse<>(data, "Logged In Successfully!"));
     }
 
     // CREATE

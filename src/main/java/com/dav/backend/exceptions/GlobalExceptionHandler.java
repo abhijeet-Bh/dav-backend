@@ -24,7 +24,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(BadCredentialsException.class)
     public ResponseEntity<FailureResponse> handleBadCredentials(BadCredentialsException ex) {
-        FailureResponse response = new FailureResponse(ErrorCode.UNAUTHORIZED.getDefaultMessage());
+        FailureResponse response = new FailureResponse("Your password is incorrect, Please try again!");
         return ResponseEntity.status(ErrorCode.UNAUTHORIZED.getStatus()).body(response);
     }
 
