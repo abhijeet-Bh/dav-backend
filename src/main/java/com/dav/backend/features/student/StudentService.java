@@ -49,6 +49,13 @@ public class StudentService {
 
         DocumentReference docRef = db.collection("students").document(student.getAdmissionNo());
         student.setId(student.getAdmissionNo());
+
+        // Auth fields
+        student.setAccountNonExpired(true);
+        student.setAccountNonLocked(true);
+        student.setCredentialsNonExpired(true);
+        student.setEnabled(true);
+
         docRef.set(student).get();
 
         return student;

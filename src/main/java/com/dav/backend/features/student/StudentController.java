@@ -1,5 +1,7 @@
 package com.dav.backend.features.student;
 
+import com.dav.backend.exceptions.CustomException;
+import com.dav.backend.exceptions.ErrorCode;
 import com.dav.backend.features.auth.JwtResponse;
 import com.dav.backend.features.auth.JwtUtil;
 import com.dav.backend.features.auth.LoginRequest;
@@ -36,6 +38,8 @@ public class StudentController {
         Student student = studentService.findByAdmissionNo(request.getAdmissionNo());
         if(request.getAdmissionNo() == null || request.getPassword().isEmpty())
             throw new RuntimeException("Admission Number cannot be empty!");
+        if(student == null)
+            throw new CustomException(ErrorCode.STUDENT_NOT_FOUND,"Student with id: " + request.getAdmissionNo() + " Not found :(");
 
         if (!passwordEncoder.matches(request.getPassword(), student.getPassword())) {
             throw new BadCredentialsException("Invalid Password!");
@@ -111,7 +115,7 @@ public class StudentController {
     }
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('STUDENT', 'EMPLOYEE')")
+    @PreAuthorize("hasRole('EMPLOYEE')")
     public ResponseEntity<?> getAllStudents() {
         try {
             List<Student> response = studentService.getAllStudents();

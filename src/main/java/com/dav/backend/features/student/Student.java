@@ -26,6 +26,8 @@ public class Student implements UserDetails {
     private String section;
     private String fatherName;
     private String motherName;
+    private String gender;
+    private int rollNo;
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
     private Date birthDate;
     private String address;

@@ -1,5 +1,7 @@
 package com.dav.backend.features.employee;
 
+import com.dav.backend.exceptions.CustomException;
+import com.dav.backend.exceptions.ErrorCode;
 import com.dav.backend.features.auth.JwtResponse;
 import com.dav.backend.features.auth.JwtUtil;
 import com.dav.backend.features.auth.LoginRequest;
@@ -35,6 +37,8 @@ public class EmployeeController {
         Employee employee = employeeService.findByEmployeeId(request.getEmployeeId());
         if(request.getEmployeeId() == null || request.getPassword().isEmpty())
             throw new RuntimeException("Employee Id cannot be empty!");
+        if(employee == null)
+            throw new CustomException(ErrorCode.EMPLOYEE_NOT_FOUND,"Employee with id: " + request.getEmployeeId() + " Not found :(");
 
         if (!passwordEncoder.matches(request.getPassword(), employee.getPassword())) {
             throw new BadCredentialsException("Invalid Password!");
