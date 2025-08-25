@@ -6,6 +6,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
+
 @RestController
 @RequestMapping("/api/v1/students/attendance")
 public class AttendanceController {
@@ -17,7 +19,9 @@ public class AttendanceController {
     public ResponseEntity<?> createAttendance(@RequestBody Attendance attendance) {
         try {
             String id = attendanceService.saveAttendance(attendance);
-            return ResponseEntity.ok(new SuccessResponse<>("Attendance saved with ID: " + id,"Attendance saved!"));
+            HashMap<String, String> map = new HashMap<>();
+            map.put("attendanceId", id);
+            return ResponseEntity.ok(new SuccessResponse<>(map,"Attendance saved successfully!!"));
         } catch (Exception e) {
             return ResponseEntity.status(500).body(new FailureResponse("Error saving attendance: " + e.getMessage()));
         }

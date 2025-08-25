@@ -5,11 +5,15 @@ import com.dav.backend.features.student.Student;
 import com.dav.backend.features.student.StudentService;
 import com.dav.backend.utils.FailureResponse;
 import com.dav.backend.utils.ResultsUtil;
+import com.dav.backend.utils.SuccessResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.HashMap;
+import java.util.List;
 
 
 @RestController
@@ -33,9 +37,15 @@ public class StudentResultsController {
         try {
             Student student = studentService.getStudentByAdmissionNumber(result.getStudentId());
             String id = resultsService.saveResult(result);
-            return ResponseEntity.ok("Result created with ID: " + id);
+            HashMap<String, String> map = new HashMap<>();
+            map.put("resultId", id);
+
+            return ResponseEntity.ok(new SuccessResponse<>(
+                    map,
+                    "Result created successfully!"
+            ));
         } catch (Exception e) {
-            return ResponseEntity.status(500).body("Error creating result: " + e.getMessage());
+            return ResponseEntity.status(500).body(new FailureResponse("Error creating result: " + e.getMessage()));
         }
     }
 
@@ -44,35 +54,43 @@ public class StudentResultsController {
         try {
             StudentResults result = resultsService.getResultById(resultId);
             if (result == null) return ResponseEntity.status(404).body("Result not found");
-            return ResponseEntity.ok(result);
+            return ResponseEntity.ok(new SuccessResponse<>(
+                    result,
+                    "Result fetched successfully!"
+            ));
         } catch (Exception e) {
-            return ResponseEntity.status(500).body("Error fetching result: " + e.getMessage());
+            return ResponseEntity.status(500).body(
+                    new FailureResponse("Error fetching result: " + e.getMessage())
+            );
         }
     }
 
-    @GetMapping("/student")
+    @GetMapping("/student/{admissionNo}")
     public ResponseEntity<?> getResultsByAdmissionAndSession(
-            @RequestParam String admissionNo,
-            @RequestParam String session) {
+            @PathVariable String admissionNo) {
         try {
-            StudentResultsDTO studentResultsDTO = resultsService.getResultByAdmissionNumAndSession(admissionNo, session);
-            studentResultsDTO.setDownloadLink("/api/v1/students/results/download-pdf?admissionNo=" + admissionNo + "&session=" + session);
-            return ResponseEntity.ok().body(studentResultsDTO);
+            List<StudentResultsDTO> studentResultsDTO = resultsService.getResultsDTOByAdmission(admissionNo);
+            return ResponseEntity.ok().body(
+                    new SuccessResponse<>(studentResultsDTO, "Results fetched successfully!")
+            );
         } catch (Exception e) {
-            return ResponseEntity.status(500).body("Error fetching results: " + e.getMessage());
+            return ResponseEntity.status(500).body(new FailureResponse("Error fetching results: " + e.getMessage()));
         }
     }
 
     // Download Results
-    @GetMapping("/download-pdf")
-    public ResponseEntity<?> downloadResultPdf(@RequestParam String admissionNo,
-                                               @RequestParam String session) throws Exception {
+    @GetMapping("/download-pdf/{id}")
+    public ResponseEntity<?> downloadResultPdf(@PathVariable String id) throws Exception {
         try {
-            StudentResultsDTO studentResultsDTO = resultsService.getResultByAdmissionNumAndSession(admissionNo, session);
+            StudentResultsDTO studentResultsDTO = resultsService.getSingleResultDTOById(id);
             byte[] pdfBytes = resultsUtil.fillResultPdf(studentResultsDTO);
 
             return ResponseEntity.ok()
-                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=result_" + admissionNo + session + ".pdf")
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=Result-" +
+                            studentResultsDTO.getStudent().getStudentName().split(" ")[0] + "-" +
+                            studentResultsDTO.getStudent().getAdmissionNo()+ "-" +
+                            studentResultsDTO.getExamType() + "-" +
+                            studentResultsDTO.getSession() + ".pdf")
                     .contentType(MediaType.APPLICATION_PDF)
                     .body(pdfBytes);
         }catch (Exception e){

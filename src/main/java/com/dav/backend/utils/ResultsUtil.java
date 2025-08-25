@@ -12,6 +12,10 @@ import org.springframework.stereotype.Service;
 
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.util.Date;
 import java.util.Map;
 
 @Service
@@ -38,7 +42,18 @@ public class ResultsUtil {
         fields.get("fatherName").setValue(studentResultsDTO.getStudent().getFatherName());
         fields.get("motherName").setValue(studentResultsDTO.getStudent().getMotherName());
         fields.get("phoneNumber").setValue(studentResultsDTO.getStudent().getMobileNo());
-        fields.get("dateOfBirth").setValue(String.valueOf(studentResultsDTO.getStudent().getBirthDate()));
+
+        // Convert Date to LocalDate
+        Date birthDate = studentResultsDTO.getStudent().getBirthDate();
+        LocalDate localDate = birthDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+
+        // Format LocalDate to "dd-MM-yyyy"
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy");
+        String formattedDate = localDate.format(formatter);
+
+        // Now set the formatted string value
+        fields.get("dateOfBirth").setValue(formattedDate);
+
         fields.get("address").setValue(studentResultsDTO.getStudent().getAddress());
 
         int i=1;

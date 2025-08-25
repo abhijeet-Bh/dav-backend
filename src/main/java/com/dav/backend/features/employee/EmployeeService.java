@@ -1,5 +1,6 @@
 package com.dav.backend.features.employee;
 
+import com.dav.backend.features.student.Student;
 import com.google.api.core.ApiFuture;
 import com.google.cloud.firestore.*;
 import com.google.firebase.cloud.FirestoreClient;
@@ -83,14 +84,25 @@ public class EmployeeService {
         return docRef.get().get().toObject(Employee.class);
     }
 
-    // UPDATE BY EMPLOYEE ID
-    public Employee updateEmployeeByEmployeeId(String employeeId, Employee employee) throws Exception {
-        DocumentReference docRef = employeeRepository.getDocumentByEmployeeId(employeeId);
-        if (docRef == null) throw new Exception("Employee not found");
-        employee.setId(docRef.getId());
-        docRef.set(employee).get();
-        return employee;
+    public Employee updateEmployeeByEmployeeId(String employeeId, Employee updatedEmployee) throws Exception {
+        Firestore db = FirestoreClient.getFirestore();
+
+        Employee existing = getEmployeeByEmployeeId(employeeId);
+
+        String docId = existing.getId();
+
+        // Update only fields provided
+        existing.setName(updatedEmployee.getName() != null ? updatedEmployee.getName() : existing.getName());
+        existing.setMobileNo(updatedEmployee.getMobileNo() != null ? updatedEmployee.getMobileNo() : existing.getMobileNo());
+        existing.setDesignation(updatedEmployee.getDesignation() != null ? updatedEmployee.getDesignation() : existing.getDesignation());
+        existing.setDepartment(updatedEmployee.getDepartment() != null ? updatedEmployee.getDepartment() : existing.getDepartment());
+        existing.setAddress(updatedEmployee.getAddress() != null ? updatedEmployee.getAddress() : existing.getAddress());
+
+        db.collection(COLLECTION_NAME).document(docId).set(existing).get();
+
+        return existing;
     }
+
 
     // DELETE BY EMPLOYEE ID
     public void deleteEmployeeByEmployeeId(String employeeId) throws Exception {
