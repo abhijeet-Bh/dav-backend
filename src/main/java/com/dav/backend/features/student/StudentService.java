@@ -143,23 +143,50 @@ public class StudentService {
     }
 
 
-
-
-    // Update student by admissionNo
     public Student updateStudentByAdmissionNo(String admissionNo, Student updatedStudent) throws Exception {
         Firestore db = FirestoreClient.getFirestore();
 
-        DocumentSnapshot existing = getStudentByAdmissionNo(admissionNo);
-        if (existing == null) {
-            throw new RuntimeException("Student not found with admissionNo: " + admissionNo);
-        }
+        Student existing = getStudentByAdmissionNumber(admissionNo);
 
         String docId = existing.getId();
-        updatedStudent.setId(docId);
-        db.collection(COLLECTION_NAME).document(docId).set(updatedStudent).get();
 
-        return updatedStudent;
+        // Null-checking for each field
+        existing.setStudentName(
+                updatedStudent.getStudentName() != null
+                        ? updatedStudent.getStudentName()
+                        : existing.getStudentName()
+        );
+        existing.setMobileNo(
+                updatedStudent.getMobileNo() != null
+                        ? updatedStudent.getMobileNo()
+                        : existing.getMobileNo()
+        );
+        existing.setClassName(
+                updatedStudent.getClassName() != null
+                        ? updatedStudent.getClassName()
+                        : existing.getClassName()
+        );
+        existing.setSection(
+                updatedStudent.getSection() != null
+                        ? updatedStudent.getSection()
+                        : existing.getSection()
+        );
+        existing.setRollNo(
+                updatedStudent.getRollNo() != 0
+                        ? updatedStudent.getRollNo()
+                        : existing.getRollNo()
+        );
+        existing.setAddress(
+                updatedStudent.getAddress() != null
+                        ? updatedStudent.getAddress()
+                        : existing.getAddress()
+        );
+
+        db.collection(COLLECTION_NAME).document(docId).set(existing).get();
+
+        return existing;
     }
+
 
     // Delete student by admissionNo
     public void deleteStudentByAdmissionNo(String admissionNo) throws Exception {
